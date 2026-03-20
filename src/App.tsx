@@ -201,7 +201,9 @@ export default function App() {
         { title: 'BUDGET DEALS', subtitle: 'Under ৳999', icon: 'TrendingDown', color: 'from-amber-500 via-yellow-600 to-amber-700', productIds: ['2', '3'], mode: 'auto' },
         { title: 'LIMITED EDITION', subtitle: 'Exclusive Only', icon: 'Crown', color: 'from-yellow-400 via-amber-400 to-yellow-500', productIds: ['4', '5'], mode: 'auto' },
       ],
-      paymentNumber: '01988344070'
+      paymentNumber: '01988344070',
+      deliveryFeeInside: 75,
+      deliveryFeeOutside: 130
     };
 
     if (saved) {
@@ -287,6 +289,7 @@ export default function App() {
   const [shippingName, setShippingName] = useState('');
   const [shippingPhone, setShippingPhone] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
+  const [deliveryLocation, setDeliveryLocation] = useState<'inside' | 'outside'>('inside');
   const [transactionId, setTransactionId] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -1146,6 +1149,20 @@ export default function App() {
                     Shipping Information
                   </h3>
                   <div className="space-y-4">
+                    <div className="flex gap-2 mb-2">
+                      <button 
+                        onClick={() => setDeliveryLocation('inside')}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all ${deliveryLocation === 'inside' ? 'border-daraz-orange bg-orange-50 text-daraz-orange' : 'border-gray-100 text-gray-500'}`}
+                      >
+                        INSIDE DHAKA (৳{siteConfig.deliveryFeeInside || 75})
+                      </button>
+                      <button 
+                        onClick={() => setDeliveryLocation('outside')}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all ${deliveryLocation === 'outside' ? 'border-daraz-orange bg-orange-50 text-daraz-orange' : 'border-gray-100 text-gray-500'}`}
+                      >
+                        OUTSIDE DHAKA (৳{siteConfig.deliveryFeeOutside || 130})
+                      </button>
+                    </div>
                     <input 
                       type="text" 
                       placeholder="Full Name" 
@@ -1212,7 +1229,7 @@ export default function App() {
                         className="p-4 bg-orange-50 rounded-xl border border-daraz-orange/20 space-y-3"
                       >
                         <p className="text-sm text-gray-600">
-                          উপরের নাম্বারে ৳{checkoutItem.price + 60} সেন্ড মানি করে নিচে ট্রানজেকশন আইডি (Transaction ID) দিন।
+                          উপরের নাম্বারে ৳{checkoutItem.price + (deliveryLocation === 'inside' ? (siteConfig.deliveryFeeInside || 75) : (siteConfig.deliveryFeeOutside || 130))} সেন্ড মানি করে নিচে ট্রানজেকশন আইডি (Transaction ID) দিন।
                         </p>
                         <input 
                           type="text" 
@@ -1242,17 +1259,19 @@ export default function App() {
                     <span>৳{checkoutItem.price}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Delivery Fee</span>
-                    <span>৳60</span>
+                    <span>Delivery Fee ({deliveryLocation === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                    <span>৳{deliveryLocation === 'inside' ? (siteConfig.deliveryFeeInside || 75) : (siteConfig.deliveryFeeOutside || 130)}</span>
                   </div>
                   <div className="border-t pt-4 flex justify-between text-xl font-bold">
                     <span>Total</span>
-                    <span className="text-daraz-orange">৳{checkoutItem.price + 60}</span>
+                    <span className="text-daraz-orange">৳{checkoutItem.price + (deliveryLocation === 'inside' ? (siteConfig.deliveryFeeInside || 75) : (siteConfig.deliveryFeeOutside || 130))}</span>
                   </div>
                   <button 
                     disabled={!paymentMethod || !shippingName || !shippingPhone || !shippingAddress || ((paymentMethod === 'bkash' || paymentMethod === 'nagad') && !transactionId)}
                     onClick={() => {
                       const whatsappNumber = '01607374498';
+                      const currentFee = deliveryLocation === 'inside' ? (siteConfig.deliveryFeeInside || 75) : (siteConfig.deliveryFeeOutside || 130);
+                      const total = checkoutItem.price + currentFee;
                       
                       let productList = '';
                       if (checkoutItem.id === 'cart-checkout') {
@@ -1264,8 +1283,8 @@ export default function App() {
                       const message = `*নতুন অর্ডার (New Order)*\n\n` +
                         `*প্রোডাক্ট তালিকা:*\n${productList}\n\n` +
                         `*সাব-টোটাল:* ৳${checkoutItem.price}\n` +
-                        `*ডেলিভারি চার্জ:* ৳60\n` +
-                        `*মোট বিল:* ৳${checkoutItem.price + 60}\n\n` +
+                        `*ডেলিভারি চার্জ (${deliveryLocation === 'inside' ? 'ঢাকার ভিতর' : 'ঢাকার বাইরে'}):* ৳${currentFee}\n` +
+                        `*মোট বিল:* ৳${total}\n\n` +
                         `*পেমেন্ট মেথড:* ${paymentMethod?.toUpperCase()}\n` +
                         (transactionId ? `*ট্রানজেকশন আইডি:* ${transactionId}\n\n` : `\n`) +
                         `*কাস্টমার ডিটেইলস:*\n` +
@@ -1582,6 +1601,26 @@ export default function App() {
                             placeholder="বিকাশ বা নগদ নাম্বার দিন"
                             className="w-full border rounded p-2"
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Delivery Fee (Inside Dhaka)</label>
+                            <input 
+                              type="number" 
+                              value={siteConfig.deliveryFeeInside || 75}
+                              onChange={(e) => setSiteConfig({...siteConfig, deliveryFeeInside: parseInt(e.target.value) || 0})}
+                              className="w-full border rounded p-2"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Delivery Fee (Outside Dhaka)</label>
+                            <input 
+                              type="number" 
+                              value={siteConfig.deliveryFeeOutside || 130}
+                              onChange={(e) => setSiteConfig({...siteConfig, deliveryFeeOutside: parseInt(e.target.value) || 0})}
+                              className="w-full border rounded p-2"
+                            />
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hero Banners (Carousel - 5 Images)</label>

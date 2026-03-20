@@ -57,6 +57,8 @@ export interface SiteConfig {
   footerSections: FooterSection[];
   premiumOffers?: PremiumOffer[];
   paymentNumber?: string;
+  deliveryFeeInside?: number;
+  deliveryFeeOutside?: number;
 }
 
 export interface CartItem extends Product {
