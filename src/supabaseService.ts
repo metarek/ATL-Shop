@@ -16,20 +16,38 @@ export const supabaseService = {
   },
 
   async saveProduct(product: Product) {
-    const { error } = await supabase
-      .from('products')
-      .upsert(product);
-    
-    if (error) console.error('Error saving product:', error);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .upsert(product);
+      
+      if (error) {
+        console.error('Supabase saveProduct error:', error);
+        throw error;
+      }
+      console.log('Product saved to Supabase successfully');
+    } catch (err) {
+      console.error('Failed to save product to Supabase:', err);
+      throw err;
+    }
   },
 
   async deleteProduct(id: string) {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-    
-    if (error) console.error('Error deleting product:', error);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Supabase deleteProduct error:', error);
+        throw error;
+      }
+      console.log('Product deleted from Supabase successfully');
+    } catch (err) {
+      console.error('Failed to delete product from Supabase:', err);
+      throw err;
+    }
   },
 
   // Users

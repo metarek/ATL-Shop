@@ -309,17 +309,29 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const [dbStatus, setDbStatus] = useState<'connected' | 'error' | 'loading'>('loading');
+  const [dbError, setDbError] = useState<string | null>(null);
+
   // Supabase Initial Fetch
   useEffect(() => {
     const fetchData = async () => {
-      const dbProducts = await supabaseService.getProducts();
-      if (dbProducts.length > 0) setProducts(dbProducts);
+      try {
+        setDbStatus('loading');
+        const dbProducts = await supabaseService.getProducts();
+        if (dbProducts.length > 0) setProducts(dbProducts);
 
-      const dbUsers = await supabaseService.getUsers();
-      if (dbUsers.length > 0) setRegisteredUsers(dbUsers);
+        const dbUsers = await supabaseService.getUsers();
+        if (dbUsers.length > 0) setRegisteredUsers(dbUsers);
 
-      const dbConfig = await supabaseService.getSiteConfig();
-      if (dbConfig) setSiteConfig(dbConfig);
+        const dbConfig = await supabaseService.getSiteConfig();
+        if (dbConfig) setSiteConfig(dbConfig);
+        
+        setDbStatus('connected');
+      } catch (err) {
+        console.error('Initial fetch failed:', err);
+        setDbStatus('error');
+        setDbError('ডেটাবেস কানেক্ট করতে সমস্যা হচ্ছে। আপনার Supabase কনফিগারেশন চেক করুন।');
+      }
     };
     fetchData();
   }, []);
@@ -480,15 +492,26 @@ export default function App() {
     }
   };
 
-  const saveProduct = (product: Product) => {
-    if (products.find(p => p.id === product.id)) {
-      setProducts(products.map(p => p.id === product.id ? product : p));
-    } else {
-      setProducts([...products, product]);
+  const saveProduct = async (product: Product) => {
+    try {
+      // Update local state first for responsiveness
+      if (products.find(p => p.id === product.id)) {
+        setProducts(products.map(p => p.id === product.id ? product : p));
+      } else {
+        setProducts([...products, product]);
+      }
+      
+      // Persist to Supabase
+      await supabaseService.saveProduct(product);
+      
+      setEditingProduct(null);
+      setIsAddingProduct(false);
+      setError(''); // Clear any previous errors
+    } catch (err) {
+      console.error('Save product failed:', err);
+      setError('প্রোডাক্ট সেভ করতে সমস্যা হয়েছে। দয়া করে ইন্টারনেট কানেকশন বা Supabase সেটিংস চেক করুন।');
+      // Optional: Revert local state if needed, but usually better to let user retry
     }
-    supabaseService.saveProduct(product);
-    setEditingProduct(null);
-    setIsAddingProduct(false);
   };
 
   if (!currentUser) {
@@ -566,7 +589,10 @@ export default function App() {
               <span>BECOME A SELLER</span>
               <span>HELP & SUPPORT</span>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
+              {dbStatus === 'loading' && <span className="text-[10px] text-gray-400 animate-pulse">Syncing...</span>}
+              {dbStatus === 'error' && <span className="text-[10px] text-red-500 flex items-center gap-1"><X size={10} /> Offline</span>}
+              {dbStatus === 'connected' && <span className="text-[10px] text-green-500 flex items-center gap-1"><Check size={10} /> Online</span>}
               {currentUser ? (
                 <span 
                   onClick={() => setIsProfileOpen(true)}
@@ -2304,16 +2330,30 @@ export default function App() {
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">
-                {isAddingProduct ? 'নতুন প্রোডাক্ট যোগ করুন' : 'প্রোডাক্ট এডিট করুন'}
-              </h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl font-bold">
+                  {isAddingProduct ? 'নতুন প্রোডাক্ট যোগ করুন' : 'প্রোডাক্ট এডিট করুন'}
+                </h3>
+                {dbStatus === 'error' && (
+                  <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <X size={10} /> DB Error
+                  </span>
+                )}
+              </div>
               <button 
                 className="glow-button p-2 hover:bg-gray-100 rounded-full transition-colors"
-                onClick={() => { setEditingProduct(null); setIsAddingProduct(false); }}
+                onClick={() => { setEditingProduct(null); setIsAddingProduct(false); setError(''); }}
               >
                 <X size={24} />
               </button>
             </div>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                <X size={16} />
+                {error}
+              </div>
+            )}
             
             <form className="space-y-4" onSubmit={(e) => {
               e.preventDefault();
