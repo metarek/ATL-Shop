@@ -403,12 +403,6 @@ export default function App() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const emailOrPhone = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    if (password.length !== 6) {
-      setError('পাসওয়ার্ড অবশ্যই ৬ ডিজিটের হতে হবে!');
-      return;
-    }
 
     if (authMode === 'signup') {
       const name = formData.get('name') as string;
@@ -420,7 +414,6 @@ export default function App() {
         id: Math.random().toString(36).substr(2, 9),
         name,
         email: emailOrPhone,
-        password,
         avatar: `https://picsum.photos/seed/${emailOrPhone}/100/100`,
         createdAt: new Date().toISOString(),
         totalOrders: 0,
@@ -434,13 +427,13 @@ export default function App() {
       setIsAuthModalOpen(false);
       setError('');
     } else {
-      const user = registeredUsers.find(u => u.email === emailOrPhone && u.password === password);
+      const user = registeredUsers.find(u => u.email === emailOrPhone);
       if (user) {
         setCurrentUser(user);
         setIsAuthModalOpen(false);
         setError('');
       } else {
-        setError('ভুল ইমেইল/নাম্বার বা পাসওয়ার্ড!');
+        setError('এই ইমেইল বা নাম্বার দিয়ে কোনো একাউন্ট পাওয়া যায়নি।');
       }
     }
   };
@@ -538,19 +531,6 @@ export default function App() {
                 placeholder="Enter your email or phone number"
                 className="w-full border-2 border-gray-100 rounded-lg py-3 px-4 focus:border-daraz-orange outline-none transition-colors"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Password (6 Digits)</label>
-              <input 
-                name="password" 
-                type="password" 
-                required 
-                maxLength={6}
-                minLength={6}
-                placeholder="Enter 6-digit password"
-                className="w-full border-2 border-gray-100 rounded-lg py-3 px-4 focus:border-daraz-orange outline-none transition-colors"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">পাসওয়ার্ড অবশ্যই ৬ ডিজিটের হতে হবে</p>
             </div>
 
             {error && <p className="text-red-500 text-xs text-center">{error}</p>}
@@ -2097,19 +2077,6 @@ export default function App() {
                     placeholder="Enter your email or phone number"
                     className="w-full border-2 border-gray-100 rounded-lg py-3 px-4 focus:border-daraz-orange outline-none transition-colors"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Password (6 Digits)</label>
-                  <input 
-                    name="password" 
-                    type="password" 
-                    required 
-                    maxLength={6}
-                    minLength={6}
-                    placeholder="Enter 6-digit password"
-                    className="w-full border-2 border-gray-100 rounded-lg py-3 px-4 focus:border-daraz-orange outline-none transition-colors"
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">পাসওয়ার্ড অবশ্যই ৬ ডিজিটের হতে হবে</p>
                 </div>
 
                 {error && <p className="text-red-500 text-xs text-center">{error}</p>}
