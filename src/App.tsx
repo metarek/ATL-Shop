@@ -45,88 +45,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product, SiteConfig, UserProfile, CartItem } from './types';
 import { supabaseService } from './supabaseService';
 
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Wireless Bluetooth Earbuds - High Bass',
-    price: 1250,
-    originalPrice: 2500,
-    discount: 50,
-    image: 'https://picsum.photos/seed/earbuds/300/300',
-    rating: 4.5,
-    reviews: 128,
-    category: 'Electronics',
-    description: 'Experience crystal clear sound with deep bass. These wireless earbuds offer 24-hour battery life and a comfortable ergonomic design.'
-  },
-  {
-    id: '2',
-    name: 'Smart Watch Series 7 - Waterproof',
-    price: 3500,
-    originalPrice: 5000,
-    discount: 30,
-    image: 'https://picsum.photos/seed/watch/300/300',
-    rating: 4.8,
-    reviews: 85,
-    category: 'Electronics',
-    description: 'Stay connected and track your fitness with the Smart Watch Series 7. Features heart rate monitoring, GPS, and a vibrant AMOLED display.'
-  },
-  {
-    id: '3',
-    name: 'Cotton Casual T-Shirt for Men',
-    price: 450,
-    originalPrice: 800,
-    discount: 44,
-    image: 'https://picsum.photos/seed/tshirt/300/300',
-    rating: 4.2,
-    reviews: 210,
-    category: 'Fashion',
-    description: 'Premium quality 100% cotton t-shirt. Breathable fabric and stylish fit, perfect for everyday casual wear.'
-  },
-  {
-    id: '4',
-    name: 'Non-Stick Cooking Pot Set - 3 Pcs',
-    price: 2200,
-    originalPrice: 3500,
-    image: 'https://picsum.photos/seed/pot/300/300',
-    rating: 4.6,
-    reviews: 56,
-    category: 'Home & Living',
-    description: 'High-quality non-stick coating for healthy cooking. This 3-piece set includes different sizes to meet all your kitchen needs.'
-  },
-  {
-    id: '5',
-    name: 'Gaming Mouse with RGB Lighting',
-    price: 850,
-    originalPrice: 1500,
-    image: 'https://picsum.photos/seed/mouse/300/300',
-    rating: 4.7,
-    reviews: 142,
-    category: 'Electronics',
-    description: 'Precision gaming mouse with adjustable DPI and customizable RGB lighting. Ergonomic design for long gaming sessions.'
-  },
-  {
-    id: '6',
-    name: 'Leather Wallet for Men - Premium',
-    price: 650,
-    originalPrice: 1200,
-    image: 'https://picsum.photos/seed/wallet/300/300',
-    rating: 4.4,
-    reviews: 93,
-    category: 'Fashion',
-    description: 'Genuine leather wallet with multiple card slots and a sleek design. Durable and stylish accessory for men.'
-  },
-  {
-    id: '7',
-    name: 'Professional Badminton Racket - Lightweight Carbon Fiber',
-    price: 1850,
-    originalPrice: 3200,
-    image: 'https://picsum.photos/seed/badminton/300/300',
-    rating: 4.9,
-    reviews: 42,
-    category: 'Sports',
-    description: 'Ultra-lightweight carbon fiber racket for professional play. Offers excellent control and power for your game.'
-  }
-];
+const INITIAL_PRODUCTS: Product[] = [];
 
 const CATEGORIES = [
   'Electronics', 'Fashion', 'Home & Living', 'Health & Beauty', 'Groceries', 'Toys', 'Sports'
@@ -142,19 +61,13 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     const saved = localStorage.getItem('siteConfig');
     const defaultConfig: SiteConfig = {
       siteName: 'ATL Shop',
-      heroBanner: 'https://picsum.photos/seed/banner/1200/400',
-      heroBanners: [
-        'https://picsum.photos/seed/banner1/1200/400',
-        'https://picsum.photos/seed/banner2/1200/400',
-        'https://picsum.photos/seed/banner3/1200/400',
-        'https://picsum.photos/seed/banner4/1200/400',
-        'https://picsum.photos/seed/banner5/1200/400'
-      ],
+      heroBanner: '',
+      heroBanners: [],
       heroBannerType: 'image',
       primaryColor: '#f85606',
       footerSections: [
@@ -194,12 +107,12 @@ export default function App() {
         }
       ],
       premiumOffers: [
-        { title: 'FLASH SALE', subtitle: 'Up to 70% Off', icon: 'Zap', color: 'from-yellow-400 via-yellow-500 to-yellow-600', productIds: ['1', '2'], mode: 'auto' },
-        { title: 'BEST SELLERS', subtitle: 'Most Popular Items', icon: 'Star', color: 'from-amber-400 via-amber-500 to-amber-600', productIds: ['3', '4'], mode: 'auto' },
-        { title: 'NEW ARRIVALS', subtitle: 'Fresh In Stock', icon: 'Plus', color: 'from-yellow-500 via-amber-600 to-yellow-700', productIds: ['5', '6'], mode: 'auto' },
-        { title: 'PREMIUM COLLECTION', subtitle: 'Luxury Selection', icon: 'Award', color: 'from-yellow-300 via-yellow-500 to-amber-500', productIds: ['7', '8'], mode: 'auto' },
-        { title: 'BUDGET DEALS', subtitle: 'Under ৳999', icon: 'TrendingDown', color: 'from-amber-500 via-yellow-600 to-amber-700', productIds: ['2', '3'], mode: 'auto' },
-        { title: 'LIMITED EDITION', subtitle: 'Exclusive Only', icon: 'Crown', color: 'from-yellow-400 via-amber-400 to-yellow-500', productIds: ['4', '5'], mode: 'auto' },
+        { title: 'FLASH SALE', subtitle: 'Up to 70% Off', icon: 'Zap', color: 'from-yellow-400 via-yellow-500 to-yellow-600', productIds: [], mode: 'auto' },
+        { title: 'BEST SELLERS', subtitle: 'Most Popular Items', icon: 'Star', color: 'from-amber-400 via-amber-500 to-amber-600', productIds: [], mode: 'auto' },
+        { title: 'NEW ARRIVALS', subtitle: 'Fresh In Stock', icon: 'Plus', color: 'from-yellow-500 via-amber-600 to-yellow-700', productIds: [], mode: 'auto' },
+        { title: 'PREMIUM COLLECTION', subtitle: 'Luxury Selection', icon: 'Award', color: 'from-yellow-300 via-yellow-500 to-amber-500', productIds: [], mode: 'auto' },
+        { title: 'BUDGET DEALS', subtitle: 'Under ৳999', icon: 'TrendingDown', color: 'from-amber-500 via-yellow-600 to-amber-700', productIds: [], mode: 'auto' },
+        { title: 'LIMITED EDITION', subtitle: 'Exclusive Only', icon: 'Crown', color: 'from-yellow-400 via-amber-400 to-yellow-500', productIds: [], mode: 'auto' },
       ],
       paymentNumber: '01988344070',
       deliveryFeeInside: 75,
@@ -260,6 +173,7 @@ export default function App() {
   const [isFooterSettingsOpen, setIsFooterSettingsOpen] = useState(false);
   const [isPremiumOffersOpen, setIsPremiumOffersOpen] = useState(false);
   const [offerSearch, setOfferSearch] = useState('');
+  const [adminProductSearch, setAdminProductSearch] = useState('');
   const [offerSort, setOfferSort] = useState<'rating' | 'reviews' | 'price'>('reviews');
   const [passwordInput, setPasswordInput] = useState('');
   const [error, setError] = useState('');
@@ -318,7 +232,7 @@ export default function App() {
       try {
         setDbStatus('loading');
         const dbProducts = await supabaseService.getProducts();
-        if (dbProducts.length > 0) setProducts(dbProducts);
+        setProducts(dbProducts || []);
 
         const dbUsers = await supabaseService.getUsers();
         if (dbUsers.length > 0) setRegisteredUsers(dbUsers);
@@ -426,7 +340,7 @@ export default function App() {
         id: Math.random().toString(36).substr(2, 9),
         name,
         email: emailOrPhone,
-        avatar: `https://picsum.photos/seed/${emailOrPhone}/100/100`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
         createdAt: new Date().toISOString(),
         totalOrders: 0,
         totalSpent: 0,
@@ -690,162 +604,166 @@ export default function App() {
         {currentView === 'home' && (
           <>
             {/* Hero Section */}
-            <section className="mb-10">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="rounded-2xl overflow-hidden shadow-premium h-[420px] relative group border border-white/20"
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentBannerIndex}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                    className="absolute inset-0"
-                  >
-                    {siteConfig.heroBannerType === 'video' ? (
-                      <video 
-                        src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline
-                        className="w-full h-full object-cover"
+            {!searchQuery && (
+              <section className="mb-10">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="rounded-2xl overflow-hidden shadow-premium aspect-video relative group border border-white/20"
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentBannerIndex}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                      className="absolute inset-0"
+                    >
+                      {siteConfig.heroBannerType === 'video' ? (
+                        <video 
+                          src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img 
+                          src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
+                          alt="Hero Banner" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                    </motion.div>
+                  </AnimatePresence>
+                  
+                  {/* Dots */}
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                    {(siteConfig.heroBanners || [siteConfig.heroBanner]).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentBannerIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${currentBannerIndex === idx ? 'bg-daraz-orange w-8 shadow-[0_0_10px_rgba(248,86,6,0.6)]' : 'bg-white/40 w-3 hover:bg-white/60'}`}
                       />
-                    ) : (
-                      <img 
-                        src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
-                        alt="Hero Banner" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-                  </motion.div>
-                </AnimatePresence>
-                
-                {/* Dots */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-                  {(siteConfig.heroBanners || [siteConfig.heroBanner]).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentBannerIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all duration-500 ${currentBannerIndex === idx ? 'bg-daraz-orange w-8 shadow-[0_0_10px_rgba(248,86,6,0.6)]' : 'bg-white/40 w-3 hover:bg-white/60'}`}
-                    />
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {/* Navigation Arrows */}
-                <button 
-                  onClick={() => setCurrentBannerIndex((prev) => (prev - 1 + (siteConfig.heroBanners?.length || 1)) % (siteConfig.heroBanners?.length || 1))}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white/20 glow-button-white"
-                >
-                  <ChevronRight size={24} className="rotate-180" />
-                </button>
-                <button 
-                  onClick={() => setCurrentBannerIndex((prev) => (prev + 1) % (siteConfig.heroBanners?.length || 1))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white/20 glow-button-white"
-                >
-                  <ChevronRight size={24} />
-                </button>
-              </motion.div>
-            </section>
+                  {/* Navigation Arrows */}
+                  <button 
+                    onClick={() => setCurrentBannerIndex((prev) => (prev - 1 + (siteConfig.heroBanners?.length || 1)) % (siteConfig.heroBanners?.length || 1))}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white/20 glow-button-white"
+                  >
+                    <ChevronRight size={24} className="rotate-180" />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentBannerIndex((prev) => (prev + 1) % (siteConfig.heroBanners?.length || 1))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white/20 glow-button-white"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </motion.div>
+              </section>
+            )}
 
             {/* Golden Premium Offer Boxes */}
-            <section className="mb-14">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="h-10 w-2 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-amber-200"></div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tighter italic">PREMIUM OFFERS</h2>
-                <div className="flex-1 h-[2px] bg-gradient-to-r from-amber-500/30 via-amber-500/10 to-transparent rounded-full"></div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {siteConfig.premiumOffers?.map((offer, idx) => {
-                  const offerProducts = offer.mode === 'auto' 
-                    ? getAutoProducts(offer.title)
-                    : offer.productIds
-                        .map(id => products.find(p => p.id === id))
-                        .filter(Boolean) as Product[];
-                  
-                  const IconComponent = ICON_MAP[offer.icon] || Star;
+            {!searchQuery && (
+              <section className="mb-14">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="h-10 w-2 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-amber-200"></div>
+                  <h2 className="text-3xl font-black text-gray-900 tracking-tighter italic">PREMIUM OFFERS</h2>
+                  <div className="flex-1 h-[2px] bg-gradient-to-r from-amber-500/30 via-amber-500/10 to-transparent rounded-full"></div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {siteConfig.premiumOffers?.map((offer, idx) => {
+                    const offerProducts = offer.mode === 'auto' 
+                      ? getAutoProducts(offer.title)
+                      : offer.productIds
+                          .map(id => products.find(p => p.id === id))
+                          .filter(Boolean) as Product[];
+                    
+                    const IconComponent = ICON_MAP[offer.icon] || Star;
 
-                  return (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.1, duration: 0.6 }}
-                      className={`relative overflow-hidden rounded-[2rem] p-1 bg-gradient-to-br ${offer.color} shadow-2xl group cursor-pointer hover-lift`}
-                    >
-                      <div className="bg-white rounded-[1.8rem] p-6 h-full flex flex-col relative z-10">
-                        <div className="flex justify-between items-start mb-6">
-                          <div>
-                            <h3 className={`text-transparent bg-clip-text bg-gradient-to-r ${offer.color} font-black text-2xl leading-tight tracking-tight`}>
-                              {offer.title}
-                            </h3>
-                            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1.5">{offer.subtitle}</p>
+                    return (
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: idx * 0.1, duration: 0.6 }}
+                        className={`relative overflow-hidden rounded-[2rem] p-1 bg-gradient-to-br ${offer.color} shadow-2xl group cursor-pointer hover-lift`}
+                      >
+                        <div className="bg-white rounded-[1.8rem] p-6 h-full flex flex-col relative z-10">
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <h3 className={`text-transparent bg-clip-text bg-gradient-to-r ${offer.color} font-black text-2xl leading-tight tracking-tight`}>
+                                {offer.title}
+                              </h3>
+                              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1.5">{offer.subtitle}</p>
+                            </div>
+                            <div className={`p-3 rounded-2xl bg-gradient-to-br ${offer.color} text-white shadow-xl transform group-hover:rotate-12 transition-transform duration-500`}>
+                              <IconComponent size={28} />
+                            </div>
                           </div>
-                          <div className={`p-3 rounded-2xl bg-gradient-to-br ${offer.color} text-white shadow-xl transform group-hover:rotate-12 transition-transform duration-500`}>
-                            <IconComponent size={28} />
+                          
+                          <div className="flex gap-4 mt-auto">
+                            {offerProducts.length > 0 ? offerProducts.map((p, pIdx) => (
+                              <div 
+                                key={pIdx} 
+                                className="flex-1 group/item cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProduct(p);
+                                  setCurrentView('product-details');
+                                  window.scrollTo(0, 0);
+                                }}
+                              >
+                                <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-3 border border-gray-100 relative shadow-inner img-zoom-container">
+                                  <img 
+                                    src={p.image} 
+                                    alt={p.name} 
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity"></div>
+                                </div>
+                                <div className="text-xs font-black text-gray-900 bg-gray-100 py-1 px-2 rounded-full inline-block">৳{p.price}</div>
+                              </div>
+                            )) : (
+                              <div className="flex-1 h-28 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 text-xs italic border-2 border-dashed border-gray-100">
+                                No products selected
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        
-                        <div className="flex gap-4 mt-auto">
-                          {offerProducts.length > 0 ? offerProducts.map((p, pIdx) => (
-                            <div 
-                              key={pIdx} 
-                              className="flex-1 group/item cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProduct(p);
+                          
+                          <div 
+                            onClick={() => {
+                              if (offerProducts.length > 0) {
+                                setSelectedProduct(offerProducts[0]);
                                 setCurrentView('product-details');
                                 window.scrollTo(0, 0);
-                              }}
-                            >
-                              <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-3 border border-gray-100 relative shadow-inner img-zoom-container">
-                                <img 
-                                  src={p.image} 
-                                  alt={p.name} 
-                                  className="w-full h-full object-cover"
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity"></div>
-                              </div>
-                              <div className="text-xs font-black text-gray-900 bg-gray-100 py-1 px-2 rounded-full inline-block">৳{p.price}</div>
-                            </div>
-                          )) : (
-                            <div className="flex-1 h-28 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 text-xs italic border-2 border-dashed border-gray-100">
-                              No products selected
-                            </div>
-                          )}
+                              }
+                            }}
+                            className={`mt-6 w-full py-3.5 rounded-xl bg-gradient-to-r ${offer.color} text-white text-center text-sm font-black shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all cursor-pointer uppercase tracking-wider`}
+                          >
+                            EXPLORE DEALS
+                          </div>
                         </div>
                         
-                        <div 
-                          onClick={() => {
-                            if (offerProducts.length > 0) {
-                              setSelectedProduct(offerProducts[0]);
-                              setCurrentView('product-details');
-                              window.scrollTo(0, 0);
-                            }
-                          }}
-                          className={`mt-6 w-full py-3.5 rounded-xl bg-gradient-to-r ${offer.color} text-white text-center text-sm font-black shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all cursor-pointer uppercase tracking-wider`}
-                        >
-                          EXPLORE DEALS
-                        </div>
-                      </div>
-                      
-                      {/* Decorative elements */}
-                      <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors"></div>
-                      <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-black/5 rounded-full blur-3xl group-hover:bg-black/10 transition-colors"></div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </section>
+                        {/* Decorative elements */}
+                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors"></div>
+                        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-black/5 rounded-full blur-3xl group-hover:bg-black/10 transition-colors"></div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             {/* Flash Sale / Products */}
             <section className="mb-16">
@@ -880,7 +798,11 @@ export default function App() {
                 className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
               >
                 {products
-                  .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .filter(p => 
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                  )
                   .map(product => (
                   <motion.div 
                     variants={{
@@ -1842,7 +1764,11 @@ export default function App() {
                                       
                                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-50 rounded border border-gray-100">
                                         {products
-                                          .filter(p => p.name.toLowerCase().includes(offerSearch.toLowerCase()))
+                                          .filter(p => 
+                                            p.name.toLowerCase().includes(offerSearch.toLowerCase()) ||
+                                            p.category.toLowerCase().includes(offerSearch.toLowerCase()) ||
+                                            (p.description && p.description.toLowerCase().includes(offerSearch.toLowerCase()))
+                                          )
                                           .sort((a, b) => {
                                             if (offerSort === 'reviews') return b.reviews - a.reviews;
                                             if (offerSort === 'rating') return b.rating - a.rating;
@@ -2005,7 +1931,19 @@ export default function App() {
 
                   {/* Product Management */}
                   <div>
-                    <h3 className="font-bold mb-4">Manage Products ({products.length})</h3>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                      <h3 className="font-bold">Manage Products ({products.length})</h3>
+                      <div className="relative w-full sm:w-64">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Search products..." 
+                          value={adminProductSearch}
+                          onChange={(e) => setAdminProductSearch(e.target.value)}
+                          className="w-full border rounded-lg py-2 pl-10 pr-4 text-sm outline-none focus:ring-1 focus:ring-daraz-orange"
+                        />
+                      </div>
+                    </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
@@ -2018,7 +1956,13 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {products.map(p => (
+                          {products
+                            .filter(p => 
+                              p.name.toLowerCase().includes(adminProductSearch.toLowerCase()) ||
+                              p.category.toLowerCase().includes(adminProductSearch.toLowerCase()) ||
+                              (p.description && p.description.toLowerCase().includes(adminProductSearch.toLowerCase()))
+                            )
+                            .map(p => (
                             <tr key={p.id} className="border-b hover:bg-gray-50">
                               <td className="p-3">
                                 <img src={p.image} alt="" className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
@@ -2363,7 +2307,7 @@ export default function App() {
                 name: formData.get('name') as string,
                 price: Number(formData.get('price')),
                 originalPrice: Number(formData.get('originalPrice')),
-                image: imagePreview || (formData.get('image') as string) || 'https://picsum.photos/seed/new/300/300',
+                image: imagePreview || (formData.get('image') as string) || '',
                 category: formData.get('category') as string,
                 description: formData.get('description') as string,
                 rating: editingProduct?.rating || 4.5,
