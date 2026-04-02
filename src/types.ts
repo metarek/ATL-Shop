@@ -64,3 +64,21 @@ export interface SiteConfig {
 export interface CartItem extends Product {
   quantity: number;
 }
+
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+export interface Order {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  userAddress: string;
+  items: CartItem[];
+  totalAmount: number;
+  deliveryFee: number;
+  paymentMethod: 'bkash' | 'nagad' | 'cod';
+  transactionId?: string;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}

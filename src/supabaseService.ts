@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, UserProfile, SiteConfig } from './types';
+import { Product, UserProfile, SiteConfig, Order, OrderStatus } from './types';
 
 export const supabaseService = {
   // Products
@@ -91,5 +91,56 @@ export const supabaseService = {
       .upsert({ id: 1, ...config }); // Assuming single config row
     
     if (error) console.error('Error saving site config:', error);
+  },
+
+  // Orders
+  async createOrder(order: Order) {
+    const { error } = await supabase
+      .from('orders')
+      .insert(order);
+    
+    if (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
+  },
+
+  async getOrders(): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('createdAt', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching orders:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async getUserOrders(userId: string): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('userId', userId)
+      .order('createdAt', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching user orders:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async updateOrderStatus(orderId: string, status: OrderStatus) {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status, updatedAt: new Date().toISOString() })
+      .eq('id', orderId);
+    
+    if (error) {
+      console.error('Error updating order status:', error);
+      throw error;
+    }
   }
 };
