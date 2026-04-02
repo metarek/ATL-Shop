@@ -163,7 +163,7 @@ const BannerSkeleton = () => (
 );
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     const saved = localStorage.getItem('siteConfig');
     const defaultConfig: SiteConfig = {
@@ -311,9 +311,16 @@ export default function App() {
   const [tempName, setTempName] = useState('');
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = localStorage.getItem('orders');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'orders' | 'users' | 'settings'>('products');
   const [activeProfileTab, setActiveProfileTab] = useState<'profile' | 'orders'>('profile');
+
+  useEffect(() => {
+    localStorage.setItem('orders', JSON.stringify(orders));
+  }, [orders]);
 
   useEffect(() => {
     if (!siteConfig.heroBanners || siteConfig.heroBanners.length === 0) return;
@@ -920,7 +927,7 @@ export default function App() {
                 }}
                 className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
               >
-                {dbStatus === 'loading' ? (
+                {dbStatus === 'loading' && products.length === 0 ? (
                   [...Array(12)].map((_, i) => <ProductSkeleton key={i} />)
                 ) : (
                   products
