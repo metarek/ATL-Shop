@@ -95,14 +95,16 @@ export const supabaseService = {
 
   // Orders
   async createOrder(order: Order) {
+    console.log('Attempting to create order in Supabase:', order);
     const { error } = await supabase
       .from('orders')
       .insert(order);
     
     if (error) {
-      console.error('Error creating order:', error);
+      console.error('Supabase createOrder error details:', error);
       throw error;
     }
+    console.log('Order created in Supabase successfully');
   },
 
   async getOrders(): Promise<Order[]> {

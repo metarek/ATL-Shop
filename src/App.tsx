@@ -49,7 +49,86 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product, SiteConfig, UserProfile, CartItem, Order, OrderStatus } from './types';
 import { supabaseService } from './supabaseService';
 
-const INITIAL_PRODUCTS: Product[] = [];
+const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'p1',
+    name: 'Premium Leather Wallet',
+    price: 1250,
+    originalPrice: 1500,
+    image: 'https://picsum.photos/seed/wallet/400/400',
+    rating: 4.8,
+    reviews: 124,
+    category: 'Accessories',
+    description: 'Handcrafted premium leather wallet with multiple card slots and a sleek design.',
+    stock: 50,
+    discount: 15
+  },
+  {
+    id: 'p2',
+    name: 'Wireless Noise Cancelling Headphones',
+    price: 4500,
+    originalPrice: 5500,
+    image: 'https://picsum.photos/seed/headphones/400/400',
+    rating: 4.9,
+    reviews: 89,
+    category: 'Electronics',
+    description: 'Experience pure sound with our latest noise-cancelling technology and 40-hour battery life.',
+    stock: 30,
+    discount: 18
+  },
+  {
+    id: 'p3',
+    name: 'Minimalist Quartz Watch',
+    price: 2800,
+    originalPrice: 3500,
+    image: 'https://picsum.photos/seed/watch/400/400',
+    rating: 4.7,
+    reviews: 56,
+    category: 'Watches',
+    description: 'Elegant minimalist watch with a stainless steel mesh band and scratch-resistant glass.',
+    stock: 45,
+    discount: 20
+  },
+  {
+    id: 'p4',
+    name: 'Ergonomic Office Chair',
+    price: 8500,
+    originalPrice: 10500,
+    image: 'https://picsum.photos/seed/chair/400/400',
+    rating: 4.6,
+    reviews: 42,
+    category: 'Furniture',
+    description: 'Work in comfort with our ergonomic chair featuring adjustable lumbar support and breathable mesh.',
+    stock: 15,
+    discount: 19
+  },
+  {
+    id: 'p5',
+    name: 'Smart Fitness Tracker',
+    price: 3200,
+    originalPrice: 4000,
+    image: 'https://picsum.photos/seed/fitness/400/400',
+    rating: 4.5,
+    reviews: 210,
+    category: 'Electronics',
+    description: 'Track your steps, heart rate, and sleep with this sleek and waterproof fitness tracker.',
+    stock: 100,
+    discount: 20
+  },
+  {
+    id: 'p6',
+    name: 'Canvas Travel Backpack',
+    price: 1850,
+    originalPrice: 2200,
+    image: 'https://picsum.photos/seed/backpack/400/400',
+    rating: 4.8,
+    reviews: 75,
+    category: 'Bags',
+    description: 'Durable canvas backpack with multiple compartments, perfect for daily use or travel.',
+    stock: 60,
+    discount: 16
+  }
+];
 
 const CATEGORIES = [
   'Electronics', 'Fashion', 'Home & Living', 'Health & Beauty', 'Groceries', 'Toys', 'Sports'
@@ -260,16 +339,21 @@ export default function App() {
         setDbStatus('loading');
         setIsLoading(true);
         const dbProducts = await supabaseService.getProducts();
-        setProducts(dbProducts || []);
+        if (dbProducts && dbProducts.length > 0) {
+          setProducts(dbProducts);
+        } else {
+          console.log('No products found in database, using initial products');
+          setProducts(INITIAL_PRODUCTS);
+        }
 
         const dbUsers = await supabaseService.getUsers();
-        if (dbUsers.length > 0) setRegisteredUsers(dbUsers);
+        setRegisteredUsers(dbUsers || []);
 
         const dbConfig = await supabaseService.getSiteConfig();
         if (dbConfig) setSiteConfig(dbConfig);
 
         const dbOrders = await supabaseService.getOrders();
-        setOrders(dbOrders);
+        setOrders(dbOrders || []);
         
         setDbStatus('connected');
       } catch (err) {
@@ -1247,9 +1331,22 @@ export default function App() {
                       
                       const orderItems = checkoutItem.id === 'cart-checkout' ? cart : [{ ...checkoutItem, quantity: 1 }];
                       
+                      const orderUserId = currentUser?.id || 'guest';
+                      
+                      // Ensure guest user exists in Supabase if needed
+                      if (orderUserId === 'guest') {
+                        const guestUser: UserProfile = {
+                          id: 'guest',
+                          name: 'Guest User',
+                          email: 'guest@atlshop.com',
+                          createdAt: new Date().toISOString()
+                        };
+                        await supabaseService.saveUser(guestUser);
+                      }
+
                       const newOrder: Order = {
                         id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-                        userId: currentUser?.id || 'guest',
+                        userId: orderUserId,
                         userName: shippingName,
                         userPhone: shippingPhone,
                         userAddress: shippingAddress,
@@ -1308,9 +1405,10 @@ export default function App() {
                         
                         // Reset transaction ID
                         setTransactionId('');
-                      } catch (err) {
+                      } catch (err: any) {
                         console.error('Order creation failed:', err);
-                        alert('অর্ডার সেভ করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+                        const errorMessage = err?.message || 'অর্ডার সেভ করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।';
+                        alert(`Error: ${errorMessage}`);
                       }
                     }}
                     className="w-full bg-atl-orange text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-atl-orange/20"
@@ -2484,6 +2582,18 @@ export default function App() {
                       <div className="space-y-6">
                         <div className="flex justify-between items-center mb-6">
                           <h3 className="text-xl font-bold">My Orders</h3>
+                          <button 
+                            onClick={async () => {
+                              const dbOrders = await supabaseService.getUserOrders(currentUser.id);
+                              setOrders(prev => {
+                                const otherOrders = prev.filter(o => o.userId !== currentUser.id);
+                                return [...dbOrders, ...otherOrders];
+                              });
+                            }}
+                            className="text-xs text-atl-orange font-bold hover:underline flex items-center gap-1"
+                          >
+                            <RotateCcw size={12} /> Refresh
+                          </button>
                         </div>
                         {orders.filter(o => o.userId === currentUser.id).length === 0 ? (
                           <div className="text-center py-12 text-gray-400">
