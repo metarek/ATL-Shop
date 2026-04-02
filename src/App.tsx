@@ -43,7 +43,17 @@ import {
   CheckCircle,
   Package,
   Clock,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  Flame,
+  PlusCircle,
+  Edit,
+  Save,
+  ArrowRight,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, SiteConfig, UserProfile, CartItem, Order, OrderStatus } from './types';
@@ -140,7 +150,34 @@ const ICON_MAP: Record<string, any> = {
   Plus,
   Award,
   TrendingDown,
-  Crown
+  Crown,
+  TrendingUp,
+  ShoppingBag,
+  Heart,
+  Flame,
+  CheckCircle,
+  Truck,
+  Package,
+  Clock,
+  AlertCircle,
+  ChevronRight,
+  Search,
+  ShoppingCart,
+  User,
+  Menu,
+  X,
+  LogOut,
+  Settings,
+  PlusCircle,
+  Trash2,
+  Edit,
+  Save,
+  ImageIcon,
+  ArrowRight,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube
 };
 
 // Loading Skeleton Component
@@ -163,7 +200,7 @@ const BannerSkeleton = () => (
 );
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     const saved = localStorage.getItem('siteConfig');
     const defaultConfig: SiteConfig = {
@@ -222,17 +259,16 @@ export default function App() {
     };
 
     if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...defaultConfig, ...parsed };
+      try {
+        const parsed = JSON.parse(saved);
+        return { ...defaultConfig, ...parsed };
+      } catch (e) {
+        console.error('Error parsing siteConfig from localStorage:', e);
+        return defaultConfig;
+      }
     }
     return defaultConfig;
   });
-
-  useEffect(() => {
-    localStorage.setItem('siteConfig', JSON.stringify(siteConfig));
-    // Also save to Supabase for persistence across devices/sessions
-    supabaseService.saveSiteConfig(siteConfig);
-  }, [siteConfig]);
 
   const getAutoProducts = (title: string): Product[] => {
     const sortedProducts = [...products];
@@ -282,19 +318,34 @@ export default function App() {
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('currentUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error('Error parsing currentUser:', e);
+      return null;
+    }
   });
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem('registeredUsers');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('registeredUsers');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing registeredUsers:', e);
+      return [];
+    }
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing cart:', e);
+      return [];
+    }
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -312,8 +363,13 @@ export default function App() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('orders');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing orders:', e);
+      return [];
+    }
   });
   const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'orders' | 'users' | 'settings'>('products');
   const [activeProfileTab, setActiveProfileTab] = useState<'profile' | 'orders'>('profile');
@@ -384,9 +440,19 @@ export default function App() {
   }, [registeredUsers]);
 
   useEffect(() => {
-    localStorage.setItem('siteConfig', JSON.stringify(siteConfig));
-    supabaseService.saveSiteConfig(siteConfig);
-  }, [siteConfig]);
+    const saveConfig = async () => {
+      try {
+        localStorage.setItem('siteConfig', JSON.stringify(siteConfig));
+        // Only save to Supabase if we are not in loading state to avoid overwriting with initial local state
+        if (dbStatus === 'connected') {
+          await supabaseService.saveSiteConfig(siteConfig);
+        }
+      } catch (e) {
+        console.error('Error saving siteConfig:', e);
+      }
+    };
+    saveConfig();
+  }, [siteConfig, dbStatus]);
 
   useEffect(() => {
     if (editingProduct) {
@@ -932,8 +998,8 @@ export default function App() {
                 ) : (
                   products
                     .filter(p => 
-                      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
                     )
                     .map(product => (
@@ -942,7 +1008,6 @@ export default function App() {
                         hidden: { opacity: 0, y: 20 },
                         visible: { opacity: 1, y: 0 }
                       }}
-                      layoutId={`product-${product.id}`}
                       key={product.id} 
                       onClick={() => {
                         setSelectedProduct(product);
@@ -952,8 +1017,7 @@ export default function App() {
                       className="bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group relative overflow-hidden border border-gray-100 hover-lift"
                     >
                       <div className="aspect-square overflow-hidden relative img-zoom-container">
-                        <motion.img 
-                          layoutId={`product-image-${product.id}`}
+                        <img 
                           src={product.image} 
                           alt={product.name} 
                           className="w-full h-full object-cover"
@@ -981,20 +1045,18 @@ export default function App() {
                         </div>
                       </div>
                       <div className="p-4">
-                        <motion.h3 
-                          layoutId={`product-name-${product.id}`}
+                        <h3 
                           className="text-sm line-clamp-2 h-10 mb-1 group-hover:text-atl-orange transition-colors"
                         >
                           {product.name}
-                        </motion.h3>
+                        </h3>
                         <div className="flex items-center justify-between">
                           <div className="flex flex-col">
-                            <motion.div 
-                              layoutId={`product-price-${product.id}`}
+                            <div 
                               className="text-lg font-black text-atl-orange tracking-tight"
                             >
                               ৳{product.price}
-                            </motion.div>
+                            </div>
                             {product.originalPrice && (
                               <span className="text-[10px] text-gray-400 line-through">৳{product.originalPrice}</span>
                             )}
@@ -1030,8 +1092,7 @@ export default function App() {
             </div>
             <div className="flex flex-col md:flex-row p-6 md:p-10 gap-10">
               <div className="w-full md:w-1/2 aspect-square bg-gray-50 rounded-xl overflow-hidden shadow-inner">
-                <motion.img 
-                  layoutId={`product-image-${selectedProduct.id}`}
+                <img 
                   src={selectedProduct.image} 
                   alt={selectedProduct.name} 
                   className="w-full h-full object-cover"
@@ -1041,20 +1102,14 @@ export default function App() {
 
               <div className="flex-1 flex flex-col">
                 <div className="flex-1">
-                  <motion.h2 
-                    layoutId={`product-name-${selectedProduct.id}`}
-                    className="text-2xl md:text-3xl font-bold mb-4"
-                  >
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4">
                     {selectedProduct.name}
-                  </motion.h2>
+                  </h2>
 
                   <div className="flex items-center gap-4 mb-6">
-                    <motion.div 
-                      layoutId={`product-price-${selectedProduct.id}`}
-                      className="text-3xl font-bold text-atl-orange"
-                    >
+                    <div className="text-3xl font-bold text-atl-orange">
                       ৳{selectedProduct.price}
-                    </motion.div>
+                    </div>
                     {selectedProduct.originalPrice && (
                       <div className="flex items-center gap-2 text-lg text-gray-400">
                         <span className="line-through">৳{selectedProduct.originalPrice}</span>
