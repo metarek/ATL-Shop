@@ -261,6 +261,7 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== 'object') return defaultConfig;
         return { ...defaultConfig, ...parsed };
       } catch (e) {
         console.error('Error parsing siteConfig from localStorage:', e);
@@ -271,35 +272,38 @@ export default function App() {
   });
 
   const getAutoProducts = (title: string): Product[] => {
+    if (!Array.isArray(products)) return [];
     const sortedProducts = [...products];
+    if (!title) return sortedProducts.slice(0, 2);
+    
     switch (title) {
       case 'FLASH SALE':
         return sortedProducts
           .filter(p => p.originalPrice)
           .sort((a, b) => {
-            const discA = (a.originalPrice || 0) - a.price;
-            const discB = (b.originalPrice || 0) - b.price;
+            const discA = (a.originalPrice || 0) - (a.price || 0);
+            const discB = (b.originalPrice || 0) - (b.price || 0);
             return discB - discA;
           })
           .slice(0, 2);
       case 'BEST SELLERS':
         return sortedProducts
-          .sort((a, b) => b.reviews - a.reviews)
+          .sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
           .slice(0, 2);
       case 'NEW ARRIVALS':
         return sortedProducts.slice(-2).reverse();
       case 'PREMIUM COLLECTION':
         return sortedProducts
-          .sort((a, b) => b.price - a.price)
+          .sort((a, b) => (b.price || 0) - (a.price || 0))
           .slice(0, 2);
       case 'BUDGET DEALS':
         return sortedProducts
-          .filter(p => p.price < 1000)
-          .sort((a, b) => a.price - b.price)
+          .filter(p => (p.price || 0) < 1000)
+          .sort((a, b) => (a.price || 0) - (b.price || 0))
           .slice(0, 2);
       case 'LIMITED EDITION':
         return sortedProducts
-          .sort((a, b) => b.rating - a.rating)
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
           .slice(0, 2);
       default:
         return sortedProducts.slice(0, 2);
@@ -329,7 +333,9 @@ export default function App() {
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => {
     try {
       const saved = localStorage.getItem('registeredUsers');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Error parsing registeredUsers:', e);
       return [];
@@ -341,7 +347,9 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Error parsing cart:', e);
       return [];
@@ -365,7 +373,9 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('orders');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Error parsing orders:', e);
       return [];
@@ -413,7 +423,7 @@ export default function App() {
         setRegisteredUsers(dbUsers || []);
 
         const dbConfig = await supabaseService.getSiteConfig();
-        if (dbConfig) setSiteConfig(dbConfig);
+        if (dbConfig) setSiteConfig(prev => ({ ...prev, ...dbConfig }));
 
         const dbOrders = await supabaseService.getOrders();
         setOrders(dbOrders || []);
@@ -702,7 +712,7 @@ export default function App() {
                   onClick={() => setIsProfileOpen(true)}
                   className="cursor-pointer hover:underline"
                 >
-                  {currentUser.name.toUpperCase()}
+                  {(currentUser.name || 'User').toUpperCase()}
                 </span>
               ) : (
                 <>
@@ -739,12 +749,12 @@ export default function App() {
               </div>
               <div className="flex flex-col -space-y-1">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-atl-orange to-orange-700 font-black text-3xl tracking-tighter italic group-hover:scale-105 transition-transform origin-left duration-300">
-                  {siteConfig.siteName.split(' ')[0]}
+                  {(siteConfig.siteName || 'ATL Shop').split(' ')[0]}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <div className="h-[2px] w-4 bg-atl-orange/30 rounded-full"></div>
                   <span className="text-gray-400 font-black text-[10px] uppercase tracking-[0.3em]">
-                    {siteConfig.siteName.split(' ').slice(1).join(' ') || 'Online Shop'}
+                    {(siteConfig.siteName || 'ATL Shop').split(' ').slice(1).join(' ') || 'Online Shop'}
                   </span>
                 </div>
               </div>
@@ -878,7 +888,7 @@ export default function App() {
                   {siteConfig.premiumOffers?.map((offer, idx) => {
                     const offerProducts = offer.mode === 'auto' 
                       ? getAutoProducts(offer.title)
-                      : offer.productIds
+                      : (offer.productIds || [])
                           .map(id => products.find(p => p.id === id))
                           .filter(Boolean) as Product[];
                     
@@ -997,11 +1007,14 @@ export default function App() {
                   [...Array(12)].map((_, i) => <ProductSkeleton key={i} />)
                 ) : (
                   products
-                    .filter(p => 
-                      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                    )
+                    .filter(p => {
+                      const query = (searchQuery || '').toLowerCase();
+                      return (
+                        (p.name || '').toLowerCase().includes(query) ||
+                        (p.category || '').toLowerCase().includes(query) ||
+                        (p.description || '').toLowerCase().includes(query)
+                      );
+                    })
                     .map(product => (
                     <motion.div 
                       variants={{
@@ -1521,7 +1534,7 @@ export default function App() {
             <div key={idx}>
               <h3 className="font-medium mb-4 text-atl-orange uppercase text-xs tracking-wider">{section.title}</h3>
               <ul className="text-sm text-gray-600 space-y-2">
-                {section.links.map((link, lIdx) => (
+                {section.links?.map((link, lIdx) => (
                   <li key={lIdx}>
                     <a href={link.url} className="hover:text-atl-orange transition-colors">{link.label}</a>
                   </li>
@@ -2023,8 +2036,8 @@ export default function App() {
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-50 rounded border border-gray-100">
                                           {products
                                             .filter(p => 
-                                              p.name.toLowerCase().includes(offerSearch.toLowerCase()) ||
-                                              p.category.toLowerCase().includes(offerSearch.toLowerCase()) ||
+                                              (p.name || "").toLowerCase().includes(offerSearch.toLowerCase()) ||
+                                              (p.category || "").toLowerCase().includes(offerSearch.toLowerCase()) ||
                                               (p.description && p.description.toLowerCase().includes(offerSearch.toLowerCase()))
                                             )
                                             .sort((a, b) => {
@@ -2033,13 +2046,13 @@ export default function App() {
                                               return b.price - a.price;
                                             })
                                             .map(p => {
-                                              const isSelected = offer.productIds.includes(p.id);
+                                              const isSelected = (offer.productIds || []).includes(p.id);
                                               return (
                                                 <button
                                                   key={p.id}
                                                   onClick={() => {
                                                     const newOffers = [...(siteConfig.premiumOffers || [])];
-                                                    const currentIds = [...offer.productIds];
+                                                    const currentIds = [...(offer.productIds || [])];
                                                     if (isSelected) {
                                                       newOffers[idx] = { ...offer, productIds: currentIds.filter(id => id !== p.id) };
                                                     } else if (currentIds.length < 2) {
@@ -2120,7 +2133,7 @@ export default function App() {
                                         type="text" 
                                         value={section.title}
                                         onChange={(e) => {
-                                          const newSections = [...siteConfig.footerSections];
+                                          const newSections = [...(siteConfig.footerSections || [])];
                                           newSections[sIdx].title = e.target.value;
                                           setSiteConfig({...siteConfig, footerSections: newSections});
                                         }}
@@ -2128,13 +2141,13 @@ export default function App() {
                                       />
                                     </div>
                                     <div className="space-y-2">
-                                      {section.links.map((link, lIdx) => (
+                                      {section.links?.map((link, lIdx) => (
                                         <div key={lIdx} className="flex gap-1 items-center">
                                           <input 
                                             type="text" 
                                             value={link.label}
                                             onChange={(e) => {
-                                              const newSections = [...siteConfig.footerSections];
+                                              const newSections = [...(siteConfig.footerSections || [])];
                                               newSections[sIdx].links[lIdx].label = e.target.value;
                                               setSiteConfig({...siteConfig, footerSections: newSections});
                                             }}
@@ -2143,7 +2156,7 @@ export default function App() {
                                           />
                                           <button 
                                             onClick={() => {
-                                              const newSections = [...siteConfig.footerSections];
+                                              const newSections = [...(siteConfig.footerSections || [])];
                                               newSections[sIdx].links.splice(lIdx, 1);
                                               setSiteConfig({...siteConfig, footerSections: newSections});
                                             }}
@@ -2155,7 +2168,7 @@ export default function App() {
                                       ))}
                                       <button 
                                         onClick={() => {
-                                          const newSections = [...siteConfig.footerSections];
+                                          const newSections = [...(siteConfig.footerSections || [])];
                                           newSections[sIdx].links.push({ label: 'New Link', url: '#' });
                                           setSiteConfig({...siteConfig, footerSections: newSections});
                                         }}
@@ -2208,7 +2221,7 @@ export default function App() {
                                   </td>
                                   <td className="p-4 border-b">
                                     <div className="text-xs">
-                                      {order.items.map((item, i) => (
+                                      {order.items?.map((item, i) => (
                                         <div key={i}>{item.name} (x{item.quantity})</div>
                                       ))}
                                     </div>
@@ -2322,8 +2335,8 @@ export default function App() {
                           <tbody>
                             {products
                               .filter(p => 
-                                p.name.toLowerCase().includes(adminProductSearch.toLowerCase()) ||
-                                p.category.toLowerCase().includes(adminProductSearch.toLowerCase()) ||
+                                (p.name || "").toLowerCase().includes(adminProductSearch.toLowerCase()) ||
+                                (p.category || "").toLowerCase().includes(adminProductSearch.toLowerCase()) ||
                                 (p.description && p.description.toLowerCase().includes(adminProductSearch.toLowerCase()))
                               )
                               .map(p => (
@@ -2648,7 +2661,7 @@ export default function App() {
                             onClick={async () => {
                               const dbOrders = await supabaseService.getUserOrders(currentUser.id);
                               setOrders(prev => {
-                                const otherOrders = prev.filter(o => o.userId !== currentUser.id);
+                                const otherOrders = prev.filter(o => o.userId !== currentUser?.id);
                                 return [...dbOrders, ...otherOrders];
                               });
                             }}
@@ -2657,14 +2670,14 @@ export default function App() {
                             <RotateCcw size={12} /> Refresh
                           </button>
                         </div>
-                        {orders.filter(o => o.userId === currentUser.id).length === 0 ? (
+                        {orders.filter(o => o.userId === currentUser?.id).length === 0 ? (
                           <div className="text-center py-12 text-gray-400">
                             <ShoppingBag size={48} className="mx-auto mb-4 opacity-20" />
                             <p>You haven't placed any orders yet.</p>
                           </div>
                         ) : (
                           <div className="space-y-6">
-                            {orders.filter(o => o.userId === currentUser.id).map(order => (
+                            {orders.filter(o => o.userId === currentUser?.id).map(order => (
                               <div key={order.id} className="border rounded-xl p-4 space-y-4 bg-gray-50/50">
                                 <div className="flex justify-between items-start">
                                   <div>
@@ -2687,7 +2700,7 @@ export default function App() {
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  {order.items.map((item, idx) => (
+                                  {order.items?.map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-3">
                                       <img src={item.image} className="w-10 h-10 rounded object-cover border" />
                                       <div className="flex-1 min-w-0">
