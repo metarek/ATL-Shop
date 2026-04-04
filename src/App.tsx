@@ -59,6 +59,51 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product, SiteConfig, UserProfile, CartItem, Order, OrderStatus } from './types';
 import { supabaseService } from './supabaseService';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 text-center">
+          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-red-100">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle size={32} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">দুঃখিত, একটি সমস্যা হয়েছে</h1>
+            <p className="text-gray-600 mb-6">পেজটি লোড করতে সমস্যা হচ্ছে। দয়া করে রিফ্রেশ করুন।</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-atl-orange text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors"
+            >
+              আবার চেষ্টা করুন
+            </button>
+            {process.env.NODE_ENV !== 'production' && (
+              <pre className="mt-6 p-4 bg-gray-100 rounded-lg text-left text-xs overflow-auto max-h-40 text-red-500">
+                {this.state.error?.toString()}
+              </pre>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'p1',
@@ -376,6 +421,14 @@ export default function App() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+
+  // Safety check for banner index
+  useEffect(() => {
+    const banners = siteConfig.heroBanners;
+    if (Array.isArray(banners) && currentBannerIndex >= banners.length && banners.length > 0) {
+      setCurrentBannerIndex(0);
+    }
+  }, [siteConfig.heroBanners, currentBannerIndex]);
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
@@ -431,7 +484,20 @@ export default function App() {
         setRegisteredUsers(dbUsers || []);
 
         const dbConfig = await supabaseService.getSiteConfig();
-        if (dbConfig) setSiteConfig(prev => ({ ...prev, ...dbConfig }));
+        if (dbConfig) {
+          setSiteConfig(prev => {
+            const sanitized = { ...prev };
+            // Only merge if the properties are valid
+            if (dbConfig.siteName) sanitized.siteName = dbConfig.siteName;
+            if (dbConfig.deliveryFeeInside !== undefined) sanitized.deliveryFeeInside = dbConfig.deliveryFeeInside;
+            if (dbConfig.deliveryFeeOutside !== undefined) sanitized.deliveryFeeOutside = dbConfig.deliveryFeeOutside;
+            if (Array.isArray(dbConfig.heroBanners) && dbConfig.heroBanners.length > 0) sanitized.heroBanners = dbConfig.heroBanners;
+            if (dbConfig.heroBanner) sanitized.heroBanner = dbConfig.heroBanner;
+            if (Array.isArray(dbConfig.footerSections) && dbConfig.footerSections.length > 0) sanitized.footerSections = dbConfig.footerSections;
+            if (Array.isArray(dbConfig.premiumOffers) && dbConfig.premiumOffers.length > 0) sanitized.premiumOffers = dbConfig.premiumOffers;
+            return sanitized;
+          });
+        }
 
         const dbOrders = await supabaseService.getOrders();
         setOrders(dbOrders || []);
@@ -639,8 +705,9 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 bg-gradient-to-br from-atl-orange to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-200">
@@ -698,11 +765,13 @@ export default function App() {
           </div>
         </div>
       </div>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col font-sans">
       {/* Header */}
       <header className="sticky top-0 z-50 glass-header transition-all duration-300">
         <div className="bg-atl-bg py-1 border-b border-gray-100 hidden md:block">
@@ -2875,5 +2944,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }
