@@ -472,22 +472,28 @@ export default function App() {
       try {
         setDbStatus('loading');
         setIsLoading(true);
-        const dbProducts = await supabaseService.getProducts();
-        if (dbProducts && dbProducts.length > 0) {
-          setProducts(dbProducts);
-        } else {
-          console.log('No products found in database, using initial products');
+        
+        // Start with initial products to ensure something is visible immediately
+        if (products.length === 0) {
           setProducts(INITIAL_PRODUCTS);
         }
 
-        const dbUsers = await supabaseService.getUsers();
+        const [dbProducts, dbUsers, dbConfig, dbOrders] = await Promise.all([
+          supabaseService.getProducts().catch(() => []),
+          supabaseService.getUsers().catch(() => []),
+          supabaseService.getSiteConfig().catch(() => null),
+          supabaseService.getOrders().catch(() => [])
+        ]);
+
+        if (dbProducts && dbProducts.length > 0) {
+          setProducts(dbProducts);
+        }
+
         setRegisteredUsers(dbUsers || []);
 
-        const dbConfig = await supabaseService.getSiteConfig();
         if (dbConfig) {
           setSiteConfig(prev => {
             const sanitized = { ...prev };
-            // Only merge if the properties are valid
             if (dbConfig.siteName) sanitized.siteName = dbConfig.siteName;
             if (dbConfig.deliveryFeeInside !== undefined) sanitized.deliveryFeeInside = dbConfig.deliveryFeeInside;
             if (dbConfig.deliveryFeeOutside !== undefined) sanitized.deliveryFeeOutside = dbConfig.deliveryFeeOutside;
@@ -499,14 +505,12 @@ export default function App() {
           });
         }
 
-        const dbOrders = await supabaseService.getOrders();
         setOrders(dbOrders || []);
-        
         setDbStatus('connected');
       } catch (err) {
         console.error('Initial fetch failed:', err);
         setDbStatus('error');
-        setDbError('ডেটাবেস কানেক্ট করতে সমস্যা হচ্ছে। আপনার Supabase কনফিগারেশন চেক করুন।');
+        // Even on error, we have INITIAL_PRODUCTS from the start of this function
       } finally {
         setIsLoading(false);
       }
@@ -904,7 +908,7 @@ export default function App() {
                       >
                         {siteConfig.heroBannerType === 'video' ? (
                           <video 
-                            src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
+                            src={(Array.isArray(siteConfig.heroBanners) && siteConfig.heroBanners[currentBannerIndex]) || siteConfig.heroBanner || 'https://assets.mixkit.co/videos/preview/mixkit-shopping-at-a-clothing-store-4342-large.mp4'} 
                             autoPlay 
                             loop 
                             muted 
@@ -913,7 +917,7 @@ export default function App() {
                           />
                         ) : (
                           <img 
-                            src={siteConfig.heroBanners?.[currentBannerIndex] || siteConfig.heroBanner} 
+                            src={(Array.isArray(siteConfig.heroBanners) && siteConfig.heroBanners[currentBannerIndex]) || siteConfig.heroBanner || 'https://picsum.photos/seed/shop/1920/1080'} 
                             alt="Hero Banner" 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
@@ -965,11 +969,21 @@ export default function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {siteConfig.premiumOffers.map((offer, idx) => {
                     if (!offer) return null;
-                    const offerProducts = offer.mode === 'auto' 
-                      ? getAutoProducts(offer.title)
-                      : (Array.isArray(offer.productIds) ? offer.productIds : [])
-                          .map(id => products.find(p => p.id === id))
-                          .filter(Boolean) as Product[];
+                    
+                    // Improved product selection logic
+                    let offerProducts: Product[] = [];
+                    if (offer.mode === 'auto') {
+                      offerProducts = getAutoProducts(offer.title);
+                    } else {
+                      offerProducts = (Array.isArray(offer.productIds) ? offer.productIds : [])
+                        .map(id => products.find(p => p.id === id))
+                        .filter(Boolean) as Product[];
+                      
+                      // Fallback to auto if manual selection is empty
+                      if (offerProducts.length === 0) {
+                        offerProducts = getAutoProducts(offer.title);
+                      }
+                    }
                     
                     const IconComponent = ICON_MAP[offer.icon] || Star;
 
@@ -996,7 +1010,7 @@ export default function App() {
                           </div>
                           
                           <div className="flex gap-4 mt-auto">
-                            {offerProducts.length > 0 ? offerProducts.map((p, pIdx) => (
+                            {offerProducts.length > 0 ? offerProducts.slice(0, 2).map((p, pIdx) => (
                               <div 
                                 key={pIdx} 
                                 className="flex-1 group/item cursor-pointer"
@@ -1020,9 +1034,13 @@ export default function App() {
                                 <div className="text-xs font-black text-gray-900 bg-gray-100 py-1 px-2 rounded-full inline-block">৳{p.price}</div>
                               </div>
                             )) : (
-                              <div className="flex-1 h-28 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 text-xs italic border-2 border-dashed border-gray-100">
-                                No products selected
-                              </div>
+                              // Fallback skeleton if still no products
+                              [1, 2].map((i) => (
+                                <div key={i} className="flex-1">
+                                  <div className="aspect-square rounded-2xl bg-gray-100 mb-3 animate-pulse border border-gray-200"></div>
+                                  <div className="h-4 w-12 bg-gray-100 rounded-full animate-pulse"></div>
+                                </div>
+                              ))
                             )}
                           </div>
                           
