@@ -262,7 +262,14 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (!parsed || typeof parsed !== 'object') return defaultConfig;
-        return { ...defaultConfig, ...parsed };
+        
+        // Ensure critical arrays are actually arrays
+        const sanitized = { ...parsed };
+        if (sanitized.heroBanners && !Array.isArray(sanitized.heroBanners)) sanitized.heroBanners = [];
+        if (sanitized.footerSections && !Array.isArray(sanitized.footerSections)) sanitized.footerSections = defaultConfig.footerSections;
+        if (sanitized.premiumOffers && !Array.isArray(sanitized.premiumOffers)) sanitized.premiumOffers = defaultConfig.premiumOffers;
+        
+        return { ...defaultConfig, ...sanitized };
       } catch (e) {
         console.error('Error parsing siteConfig from localStorage:', e);
         return defaultConfig;
@@ -389,9 +396,10 @@ export default function App() {
   }, [orders]);
 
   useEffect(() => {
-    if (!siteConfig.heroBanners || siteConfig.heroBanners.length === 0) return;
+    const banners = siteConfig.heroBanners;
+    if (!Array.isArray(banners) || banners.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % (siteConfig.heroBanners?.length || 1));
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
     }, 3000);
     return () => clearInterval(interval);
   }, [siteConfig.heroBanners]);
@@ -453,8 +461,9 @@ export default function App() {
     const saveConfig = async () => {
       try {
         localStorage.setItem('siteConfig', JSON.stringify(siteConfig));
-        // Only save to Supabase if we are not in loading state to avoid overwriting with initial local state
-        if (dbStatus === 'connected') {
+        // CRITICAL: Only save to Supabase if the user is an admin
+        // Regular users should NEVER push their local config to the database
+        if (dbStatus === 'connected' && isAdminAuthenticated) {
           await supabaseService.saveSiteConfig(siteConfig);
         }
       } catch (e) {
@@ -462,7 +471,7 @@ export default function App() {
       }
     };
     saveConfig();
-  }, [siteConfig, dbStatus]);
+  }, [siteConfig, dbStatus, isAdminAuthenticated]);
 
   useEffect(() => {
     if (editingProduct) {
@@ -749,12 +758,12 @@ export default function App() {
               </div>
               <div className="flex flex-col -space-y-1">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-atl-orange to-orange-700 font-black text-3xl tracking-tighter italic group-hover:scale-105 transition-transform origin-left duration-300">
-                  {(siteConfig.siteName || 'ATL Shop').split(' ')[0]}
+                  {String(siteConfig.siteName || 'ATL Shop').split(' ')[0]}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <div className="h-[2px] w-4 bg-atl-orange/30 rounded-full"></div>
                   <span className="text-gray-400 font-black text-[10px] uppercase tracking-[0.3em]">
-                    {(siteConfig.siteName || 'ATL Shop').split(' ').slice(1).join(' ') || 'Online Shop'}
+                    {String(siteConfig.siteName || 'ATL Shop').split(' ').slice(1).join(' ') || 'Online Shop'}
                   </span>
                 </div>
               </div>
@@ -762,7 +771,7 @@ export default function App() {
             <div className="flex-1 relative">
               <input 
                 type="text" 
-                placeholder={`Search in ${siteConfig.siteName}`} 
+                placeholder={`Search in ${siteConfig.siteName || 'ATL Shop'}`} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-100 py-2 px-4 pr-10 rounded-sm focus:outline-none focus:ring-1 focus:ring-atl-orange"
@@ -848,7 +857,7 @@ export default function App() {
                     
                     {/* Dots */}
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-                      {(siteConfig.heroBanners || [siteConfig.heroBanner]).map((_, idx) => (
+                      {(Array.isArray(siteConfig.heroBanners) && siteConfig.heroBanners.length > 0 ? siteConfig.heroBanners : [siteConfig.heroBanner]).map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setCurrentBannerIndex(idx)}
@@ -876,7 +885,7 @@ export default function App() {
             )}
 
             {/* Golden Premium Offer Boxes */}
-            {!searchQuery && (
+            {!searchQuery && Array.isArray(siteConfig.premiumOffers) && (
               <section className="mb-14">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="h-10 w-2 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-full shadow-lg shadow-amber-200"></div>
@@ -885,10 +894,11 @@ export default function App() {
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {siteConfig.premiumOffers?.map((offer, idx) => {
+                  {siteConfig.premiumOffers.map((offer, idx) => {
+                    if (!offer) return null;
                     const offerProducts = offer.mode === 'auto' 
                       ? getAutoProducts(offer.title)
-                      : (offer.productIds || [])
+                      : (Array.isArray(offer.productIds) ? offer.productIds : [])
                           .map(id => products.find(p => p.id === id))
                           .filter(Boolean) as Product[];
                     
@@ -1530,13 +1540,13 @@ export default function App() {
       {/* Footer */}
       <footer className="bg-white border-t py-12 pb-24">
         <div className="atl-container grid grid-cols-1 md:grid-cols-4 gap-8">
-          {siteConfig.footerSections?.map((section, idx) => (
+          {Array.isArray(siteConfig.footerSections) && siteConfig.footerSections.map((section, idx) => (
             <div key={idx}>
-              <h3 className="font-medium mb-4 text-atl-orange uppercase text-xs tracking-wider">{section.title}</h3>
+              <h3 className="font-medium mb-4 text-atl-orange uppercase text-xs tracking-wider">{section?.title}</h3>
               <ul className="text-sm text-gray-600 space-y-2">
-                {section.links?.map((link, lIdx) => (
+                {Array.isArray(section?.links) && section.links.map((link, lIdx) => (
                   <li key={lIdx}>
-                    <a href={link.url} className="hover:text-atl-orange transition-colors">{link.label}</a>
+                    <a href={link?.url} className="hover:text-atl-orange transition-colors">{link?.label}</a>
                   </li>
                 ))}
               </ul>
